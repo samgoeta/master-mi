@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alumni Master MI — Sciences Po Aix</title>
+  <script>
+    (function() {
+      const correct = "mastermi2026";
+      const stored = sessionStorage.getItem("alumni_auth");
+      if (stored !== correct) {
+        const input = prompt("Mot de passe requis :");
+        if (input !== correct) {
+          document.write("<div style='font-family:sans-serif;text-align:center;padding:80px;color:#888'>Accès refusé.</div>");
+          document.close();
+          throw new Error("Accès refusé");
+        }
+        sessionStorage.setItem("alumni_auth", correct);
+      }
+    })();
+  </script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #f4f5f7;
+      color: #1a1a2e;
+      min-height: 100vh;
+    }
+    header {
+      background: #1a1a2e;
+      color: white;
+      padding: 24px 32px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    header h1 { font-size: 1.4rem; font-weight: 600; letter-spacing: -0.3px; }
+    header p { font-size: 0.85rem; opacity: 0.6; margin-top: 4px; }
+    .badge {
+      background: #e63946;
+      color: white;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-left: auto;
+      white-space: nowrap;
+    }
+    .controls {
+      background: white;
+      padding: 20px 32px;
+      border-bottom: 1px solid #e0e0e0;
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .search-wrap { position: relative; flex: 1; min-width: 220px; }
+    .search-wrap svg {
+      position: absolute; left: 12px; top: 50%;
+      transform: translateY(-50%); color: #999;
+    }
+    input[type=text] {
+      width: 100%;
+      padding: 10px 14px 10px 38px;
+      border: 1.5px solid #ddd;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      transition: border-color 0.2s;
+      outline: none;
+    }
+    input[type=text]:focus { border-color: #1a1a2e; }
+    select {
+      padding: 10px 14px;
+      border: 1.5px solid #ddd;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      background: white;
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.2s;
+      color: #333;
+    }
+    select:focus { border-color: #1a1a2e; }
+    .filter-chip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: 8px;
+      border: 1.5px solid #ddd;
+      background: white;
+      cursor: pointer;
+      font-size: 0.88rem;
+      color: #555;
+      transition: all 0.15s;
+      user-select: none;
+    }
+    .filter-chip.active { background: #1a1a2e; color: white; border-color: #1a1a2e; }
+    .stats-bar {
+      padding: 12px 32px;
+      font-size: 0.85rem;
+      color: #666;
+      background: #f4f5f7;
+      border-bottom: 1px solid #e8e8e8;
+    }
+    .stats-bar span { color: #1a1a2e; font-weight: 600; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 16px;
+      padding: 24px 32px;
+    }
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      border: 1px solid #e8e8e0;
+      transition: box-shadow 0.2s, transform 0.15s;
+    }
+    .card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.08); transform: translateY(-1px); }
+    .card-header { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
+    .avatar {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #1a1a2e, #4a4e8a);
+      color: white;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 1rem;
+      flex-shrink: 0; letter-spacing: -0.5px;
+    }
+    .card-name { font-weight: 600; font-size: 1rem; line-height: 1.3; color: #1a1a2e; }
+    .card-meta { font-size: 0.78rem; color: #888; margin-top: 2px; }
+    .card-poste {
+      font-size: 0.88rem; color: #333; line-height: 1.5;
+      padding: 10px 12px;
+      background: #f8f8fa;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      border-left: 3px solid #1a1a2e;
+    }
+    .card-poste.empty { color: #aaa; font-style: italic; border-left-color: #ddd; }
+    .card-footer {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap; gap: 6px;
+    }
+    .tag {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+    .tag-promo { background: #eef0ff; color: #3b4dbf; }
+    .tag-ville { background: #e8f5e9; color: #2e7d32; }
+    .card-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+    .linkedin-btn {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 5px 12px;
+      background: #0077b5; color: white;
+      border-radius: 6px; font-size: 0.78rem; font-weight: 500;
+      text-decoration: none; transition: background 0.15s;
+    }
+    .linkedin-btn:hover { background: #005f92; }
+    .correction-btn {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 5px 12px;
+      background: transparent;
+      color: #888;
+      border: 1.5px solid #ddd;
+      border-radius: 6px;
+      font-size: 0.78rem; font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .correction-btn:hover { border-color: #e63946; color: #e63946; background: #fff5f5; }
+
+    /* ---- MODAL ---- */
+    .overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 100;
+      align-items: center; justify-content: center;
+    }
+    .overlay.open { display: flex; }
+    .modal {
+      background: white;
+      border-radius: 16px;
+      padding: 32px;
+      width: 100%; max-width: 480px;
+      margin: 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+      position: relative;
+    }
+    .modal h2 { font-size: 1.1rem; margin-bottom: 6px; }
+    .modal .modal-sub { color: #888; font-size: 0.85rem; margin-bottom: 22px; }
+    .modal label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; color: #444; }
+    .modal input, .modal textarea {
+      width: 100%; padding: 10px 12px;
+      border: 1.5px solid #ddd; border-radius: 8px;
+      font-size: 0.9rem; font-family: inherit;
+      margin-bottom: 16px; outline: none;
+      transition: border-color 0.2s;
+      resize: vertical;
+    }
+    .modal input:focus, .modal textarea:focus { border-color: #1a1a2e; }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 4px; }
+    .btn-cancel {
+      padding: 10px 20px; border-radius: 8px;
+      border: 1.5px solid #ddd; background: white;
+      font-size: 0.9rem; cursor: pointer; color: #555;
+      transition: all 0.15s;
+    }
+    .btn-cancel:hover { background: #f5f5f5; }
+    .btn-submit {
+      padding: 10px 24px; border-radius: 8px;
+      background: #1a1a2e; color: white;
+      border: none; font-size: 0.9rem;
+      cursor: pointer; font-weight: 600;
+      transition: background 0.15s;
+    }
+    .btn-submit:hover { background: #2d2d4e; }
+    .btn-submit:disabled { background: #aaa; cursor: not-allowed; }
+    .modal-success { text-align: center; padding: 20px 0; }
+    .modal-success .icon { font-size: 2.5rem; margin-bottom: 12px; }
+    .modal-success p { color: #555; font-size: 0.95rem; }
+    .close-modal {
+      position: absolute; top: 16px; right: 16px;
+      background: none; border: none;
+      font-size: 1.4rem; cursor: pointer; color: #aaa;
+      line-height: 1;
+    }
+    .close-modal:hover { color: #333; }
+    .loading {
+      grid-column: 1 / -1;
+      text-align: center; padding: 80px;
+      color: #aaa; font-size: 0.95rem;
+    }
+    .loading .spinner {
+      width: 36px; height: 36px;
+      border: 3px solid #eee;
+      border-top-color: #1a1a2e;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .no-results {
+      grid-column: 1 / -1; text-align: center;
+      padding: 60px; color: #aaa; font-size: 1rem;
+    }
+    .no-results span { font-size: 2.5rem; display: block; margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Alumni Master Métiers de l'Information</h1>
+    <p>Sciences Po Aix-en-Provence</p>
+  </div>
+  <div class="badge" id="total-badge">Chargement…</div>
+</header>
+
+<div class="controls">
+  <div class="search-wrap">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+    </svg>
+    <input type="text" id="search" placeholder="Rechercher par nom, poste, ville…" oninput="filterCards()">
+  </div>
+  <select id="filter-promo" onchange="filterCards()">
+    <option value="">Toutes les promotions</option>
+    <option>2024-2025</option><option>2023-2024</option><option>2022-2023</option>
+    <option>2021-2022</option><option>2020-2021</option><option>2019-2020</option>
+    <option>2018-2019</option><option>2017-2018</option><option>2016-2017</option>
+    <option>2015-2016</option>
+  </select>
+  <select id="filter-parcours" onchange="filterCards()">
+    <option value="">Tous les parcours</option>
+    <option>Communication</option>
+    <option>Journalisme</option>
+  </select>
+  <div class="filter-chip" id="chip-poste" onclick="toggleChip('chip-poste', 'poste')">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+    Poste renseigné
+  </div>
+  <div class="filter-chip" id="chip-linkedin" onclick="toggleChip('chip-linkedin', 'linkedin')">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>
+    Avec LinkedIn
+  </div>
+</div>
+
+<div class="stats-bar" id="stats-bar">Chargement des données…</div>
+<div class="grid" id="grid">
+  <div class="loading">
+    <div class="spinner"></div>
+    Chargement des données…
+  </div>
+</div>
+
+<!-- MODAL CORRECTION -->
+<div class="overlay" id="overlay" onclick="closeModalOnOverlay(event)">
+  <div class="modal">
+    <button class="close-modal" onclick="closeModal()">×</button>
+    <div id="modal-form-content">
+      <h2>Corriger ma fiche</h2>
+      <p class="modal-sub">Votre correction sera visible dès validation.</p>
+      <input type="hidden" id="modal-nom">
+      <label>Poste actuel affiché</label>
+      <input type="text" id="modal-poste-actuel" readonly style="background:#f5f5f5;color:#999">
+      <label>Poste à afficher</label>
+      <textarea id="modal-poste-propose" rows="2" placeholder="Mon nouveau poste…"></textarea>
+      <label>Ville (optionnel)</label>
+      <input type="text" id="modal-ville-proposee" placeholder="Paris, Marseille…">
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeModal()">Annuler</button>
+        <button class="btn-submit" id="btn-submit-correction" onclick="submitCorrection()">Envoyer</button>
+      </div>
+    </div>
+    <div id="modal-success-content" class="modal-success" style="display:none">
+      <div class="icon">✅</div>
+      <p>Correction envoyée, merci !<br>Elle sera visible dès validation.</p>
+      <div class="modal-actions" style="justify-content:center;margin-top:20px">
+        <button class="btn-cancel" onclick="closeModal()">Fermer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ⚠️  Remplacez cette URL par celle de votre Apps Script après déploiement
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx62S7ROxOZxSImN_11acwCY5o43h6Ksd_b_AGH_y_m502FubpQ8YwL7few2yBFq5s2Jg/exec";
+
+let DATA = [];
+const activeFilters = {};
+
+// ---- Chargement des données ----
+async function loadData() {
+  try {
+    const res = await fetch(APPS_SCRIPT_URL + "?action=getData");
+    DATA = await res.json();
+    filterCards();
+  } catch (err) {
+    document.getElementById('grid').innerHTML =
+      '<div class="no-results"><span>⚠️</span>Impossible de charger les données.<br>Vérifiez l\'URL Apps Script.</div>';
+    document.getElementById('stats-bar').textContent = 'Erreur de chargement';
+  }
+}
+
+// ---- Rendu des cartes ----
+function initials(nom) {
+  const parts = nom.trim().split(/\s+/);
+  return parts.length >= 2 ? (parts[0][0] + parts[parts.length-1][0]).toUpperCase() : nom.substring(0,2).toUpperCase();
+}
+function avatarColor(nom) {
+  const colors = [
+    ['#1a1a2e','#4a4e8a'],['#2d6a4f','#52b788'],
+    ['#7b2d8b','#c77dff'],['#c4622d','#f4a261'],
+    ['#1d3557','#457b9d'],['#6b2737','#e07a5f']
+  ];
+  let hash = 0;
+  for (let c of nom) hash = (hash * 31 + c.charCodeAt(0)) % colors.length;
+  const [a, b] = colors[hash];
+  return `linear-gradient(135deg, ${a}, ${b})`;
+}
+
+function renderCards(items) {
+  document.getElementById('count-shown').textContent = items.length;
+  document.getElementById('total-badge').textContent = items.length + ' résultats';
+
+  const grid = document.getElementById('grid');
+  if (items.length === 0) {
+    grid.innerHTML = '<div class="no-results"><span>🔍</span>Aucun résultat trouvé</div>';
+    return;
+  }
+
+  grid.innerHTML = items.map(d => {
+    const nom     = d['Nom'] || '';
+    const poste   = d['Poste actuel'] || '';
+    const ville   = d['Ville'] || '';
+    const promo   = d['Promotion'] || '';
+    const parcours= d['Parcours master'] || '';
+    const linkedin= d['LinkedIn'] || '';
+    const nomEsc  = nom.replace(/"/g, '&quot;');
+    const posteEsc= poste.replace(/"/g, '&quot;');
+
+    const linkedinBtn = linkedin
+      ? `<a href="${linkedin}" target="_blank" class="linkedin-btn">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+          LinkedIn
+        </a>` : '';
+
+    return `
+    <div class="card">
+      <div class="card-header">
+        <div class="avatar" style="background:${avatarColor(nom)}">${initials(nom)}</div>
+        <div>
+          <div class="card-name">${nom}</div>
+          <div class="card-meta">${parcours} · ${promo}</div>
+        </div>
+      </div>
+      <div class="card-poste ${poste ? '' : 'empty'}">${poste || 'Poste non renseigné'}</div>
+      <div class="card-footer">
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <span class="tag tag-promo">${promo}</span>
+          ${ville ? `<span class="tag tag-ville">📍 ${ville}</span>` : ''}
+        </div>
+        <div class="card-actions">
+          ${linkedinBtn}
+          <button class="correction-btn" onclick="openModal('${nomEsc}','${posteEsc}')">
+            ✏️ Corriger
+          </button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function filterCards() {
+  const q        = document.getElementById('search').value.toLowerCase();
+  const promo    = document.getElementById('filter-promo').value;
+  const parcours = document.getElementById('filter-parcours').value;
+  const onlyPoste   = !!activeFilters['poste'];
+  const onlyLinkedin= !!activeFilters['linkedin'];
+
+  const filtered = DATA.filter(d => {
+    if (promo    && d['Promotion']       !== promo)    return false;
+    if (parcours && d['Parcours master'] !== parcours) return false;
+    if (onlyPoste   && !d['Poste actuel']) return false;
+    if (onlyLinkedin && !d['LinkedIn'])    return false;
+    if (q) {
+      const hay = [d['Nom'], d['Prénom'], d['Poste actuel'], d['Ville']].join(' ').toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+  renderCards(filtered);
+}
+
+function toggleChip(id, key) {
+  const chip = document.getElementById(id);
+  activeFilters[key] ? (delete activeFilters[key], chip.classList.remove('active'))
+                     : (activeFilters[key] = true, chip.classList.add('active'));
+  filterCards();
+}
+
+// ---- Modal correction ----
+function openModal(nom, posteActuel) {
+  document.getElementById('modal-nom').value          = nom;
+  document.getElementById('modal-poste-actuel').value = posteActuel;
+  document.getElementById('modal-poste-propose').value= '';
+  document.getElementById('modal-ville-proposee').value= '';
+  document.getElementById('modal-form-content').style.display    = '';
+  document.getElementById('modal-success-content').style.display = 'none';
+  document.getElementById('btn-submit-correction').disabled = false;
+  document.getElementById('overlay').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('overlay').classList.remove('open');
+}
+
+function closeModalOnOverlay(e) {
+  if (e.target === document.getElementById('overlay')) closeModal();
+}
+
+async function submitCorrection() {
+  const nom          = document.getElementById('modal-nom').value;
+  const posteActuel  = document.getElementById('modal-poste-actuel').value;
+  const postePropose = document.getElementById('modal-poste-propose').value.trim();
+  const villeProposee= document.getElementById('modal-ville-proposee').value.trim();
+
+  if (!postePropose && !villeProposee) {
+    alert('Merci de renseigner au moins un champ à corriger.');
+    return;
+  }
+
+  const btn = document.getElementById('btn-submit-correction');
+  btn.disabled = true;
+  btn.textContent = 'Envoi…';
+
+  const url = `${APPS_SCRIPT_URL}?action=submitCorrection`
+    + `&nom=${encodeURIComponent(nom)}`
+    + `&poste_actuel=${encodeURIComponent(posteActuel)}`
+    + `&poste_propose=${encodeURIComponent(postePropose)}`
+    + `&ville_proposee=${encodeURIComponent(villeProposee)}`;
+
+  try {
+    await fetch(url);
+    document.getElementById('modal-form-content').style.display    = 'none';
+    document.getElementById('modal-success-content').style.display = '';
+  } catch(err) {
+    alert('Erreur réseau, réessayez.');
+    btn.disabled = false;
+    btn.textContent = 'Envoyer';
+  }
+}
+
+// ---- Init ----
+document.getElementById('stats-bar').innerHTML =
+  'Affichage de <span id="count-shown">…</span> alumni';
+
+loadData();
+</script>
+</body>
+</html>
